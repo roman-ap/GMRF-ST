@@ -15,14 +15,14 @@
 *
 * @return Log probability density function
 */
-real wcar_normal_lpdf ( vector y,
-                        vector mu,
-                        real rho,
-                        vector A_w, array[] int A_v, array[] int A_u,
-                        vector D_ii, 
-                        real log_det_D,
-                        vector lambda,
-                        int n ) {
+real std_wcar_lpdf ( vector y,
+                     vector mu,
+                     real rho,
+                     real log_det_D,
+                     vector lambda,
+                     vector D_ii,
+                     vector A_w, array[] int A_v, array[] int A_u,
+                     int n ) {
   
   vector[n] z = y - mu;
   real ztDz;
@@ -71,20 +71,20 @@ real wcar_normal_lpdf ( vector y,
 * @return Log probability density function
 *
 */
-real marcar_normal_lpdf ( vector y,
-                          vector mu,
-                          real rho_time,
-                          real rho_space,
-                          real log_det_Ds,
-                          vector lambdas,
-                          vector ItDs_ii,
-                          vector ItAs_w, array[] int ItAs_v, array[] int ItAs_u,
-                          vector AtDs_w, array[] int AtDs_v, array[] int AtDs_u,
-                          vector AtAs_w, array[] int AtAs_v, array[] int AtAs_u,
-                          vector IItDs_ii, 
-                          vector IItAs_w, array[] int IItAs_v, array[] int IItAs_u,
-                          int T,
-                          int S) {
+real std_marcar_lpdf ( vector y,
+                       vector mu,
+                       real rho_time,
+                       real rho_space,
+                       real log_det_Ds,
+                       vector lambdas,
+                       vector ItDs_ii,
+                       vector ItAs_w, array[] int ItAs_v, array[] int ItAs_u,
+                       vector AtDs_w, array[] int AtDs_v, array[] int AtDs_u,
+                       vector AtAs_w, array[] int AtAs_v, array[] int AtAs_u,
+                       vector IItDs_ii, 
+                       vector IItAs_w, array[] int IItAs_v, array[] int IItAs_u,
+                       int T,
+                       int S) {
   
   vector[T*S] z = y - mu;
   real zItDsz;
