@@ -4,10 +4,14 @@ library(Matrix)
 library(cmdstanr)
 library(posterior)
 library(bayesplot)
+library(extraDistr)
+library(withr)
+library(ggplot2)
+library(latex2exp)
 
 
-precints <- read_sf("/proj/wildman/FixedKretsar/FixedKretsShape2023_2024.shp")
-counties <- precints |> group_by(LANSKOD) |> summarise()
+
+counties <- read_sf("/home/roman/Nextcloud/Research/WildBoar/Data/Inputs/counties.shp")
 counties <- counties[-8,]
 plot(counties)
 
@@ -26,18 +30,28 @@ C<-sparseMatrix(i=c( rep(1:S, Ds_ii) ),
                 j=c( unlist(S_match) ),
                 x=c( rep(1/Ds_ii, Ds_ii) ),
                 dims=c(S,S))
+lambdas<-Schur(C, vectors = FALSE)$EValues
 
-rho <- 0.9
-
-Q <- (D-rho*A)
-M<-1
-Q <- forceSymmetric(Q)
-L <- Cholesky(Q,LDL=F)
-z <- Matrix(rnorm(S*M),S,M)
-u_per <- solve(L,z,system="Lt")
-u <- solve(L,u_per,system="Pt")
-
-eta <- u
+pm_mu = 0
+psd_mu = 1
+pm_sigma = 0
+psd_sigma = 0.1
+pm_rho = 0.5
+psd_rho = 0.1
+### Realisation
+with_seed(7L,{
+  mu_obs <- rnorm(n = 1, pm_mu, psd_mu)
+  sigma_obs <- rtnorm(n = 1, pm_sigma, psd_sigma, a=0)
+  rho_obs <- rtnorm(n = 1, pm_rho, psd_rho, a=1/min(lambdas), b=1/max(lambdas))
+  Q <- (D-rho_obs*A)
+  M<-1
+  Q <- forceSymmetric(Q)
+  L <- Cholesky(Q,LDL=F)
+  z <- Matrix(rnorm(S*M),S,M)
+  u_per <- solve(L,z,system="Lt")
+  u <- solve(L,u_per,system="Pt")
+  eta <- mu_obs + sigma_obs*u
+})
 
 Pop <- c(2454821,404589,301944,472298,368856,203686,246667,157973,1421781,343746,
          1767016,283548,308116,280813,287253,285642,242148,132572,278729,248480)
@@ -53,18 +67,23 @@ A_w<-A@x
 A_v<-A@i +1
 A_u<-A@p +1
 log_det_D<-sum(log(Ds_ii))
-lambda<-Schur(C, vectors = FALSE)$EValues
 
 
-car <- cmdstan_model("/home/x_romag/Documents/GMRF-ST/poi_stdcar.stan")
+car <- cmdstan_model("./poi_stdcar.stan")
 
 data_list <- list(S = S,
                   y = y,
                   log_offset = log(Pop),
-                  D_ii = Ds_ii,
+                  pm_mu = pm_mu,
+                  psd_mu = psd_mu,
+                  pm_sigma = pm_sigma,
+                  psd_sigma = psd_sigma,
+                  pm_rho = pm_rho,
+                  psd_rho = psd_rho,
+                  Ds_ii = Ds_ii,
                   log_det_D = log_det_D,
-                  lambda = lambda,
-                  S_sparse = length(A_w),
+                  lambdas = lambdas,
+                  As_sparse = length(A_w),
                   A_w = A_w,
                   A_v = A_v,
                   A_u = A_u)
@@ -77,5 +96,44 @@ car_fit <- car$sample(data = data_list,
                       iter_sampling = 1000
 )
 
-car_fit$summary(variables = c("phi_rho"),
-                posterior::default_summary_measures())
+car_fit$summary(variables = c("mu", "sigma", "rho"))
+
+
+
+##### Visualizations
+### Data frame with draws 
+car_draws <- car_fit$draws(format = "df")
+### Half normal probability density function
+dhnorm <- function(x, sigma) {
+  ifelse(x >= 0, (sqrt(2)/(sigma *sqrt(pi)))*exp(-x^2/(2*sigma^2)), 0)
+}
+#
+ggplot(data.frame(draw=car_draws$`mu`)) +
+  geom_density(aes(x=draw, y=after_stat(density)), color="pink", fill="pink") +
+  stat_function(fun = dnorm, args = list(mean=pm_mu, sd=psd_mu), colour="black", linewidth=1) +
+  xlim(pm_mu - 6*psd_mu, pm_mu + 6*psd_mu) +
+  geom_vline(xintercept = mu_obs, color="blue") +
+  theme_minimal() +
+  labs(title = TeX("Prior and posterior distribution of $\\mu$"),
+       y = TeX("Density"), x = TeX("$\\mu$")) +
+  theme(plot.title = element_text(size = 18, face = "bold", hjust = 0.5))
+
+ggplot(data.frame(draw=car_draws$`sigma`)) +
+  geom_density(aes(x=draw, y=after_stat(density)), color="pink", fill="pink") +
+  stat_function(fun = dhnorm, args = list(sigma=psd_sigma), colour="black", linewidth=1) +
+  xlim(0, pm_sigma + 6*psd_sigma) +
+  geom_vline(xintercept = sigma_obs, color="blue") +
+  theme_minimal() +
+  labs(title = TeX("Prior and posterior distribution of $\\sigma$"),
+       y = TeX("Density"), x = TeX("$\\sigma$")) +
+  theme(plot.title = element_text(size = 18, face = "bold", hjust = 0.5))
+
+ggplot(data.frame(draw=car_draws$`rho`)) +
+  geom_density(aes(x=draw, y=after_stat(density)), color="pink", fill="pink") +
+  stat_function(fun = dnorm, args = list(mean=pm_rho, sd=psd_rho), colour="black", linewidth=1) +
+  xlim(pm_rho - 6*psd_rho, pm_rho + 6*psd_rho) +
+  geom_vline(xintercept = rho_obs, color="blue") +
+  theme_minimal() +
+  labs(title = TeX("Prior and posterior distribution of $\\rho$"),
+       y = TeX("Density"), x = TeX("$\\rho$")) +
+  theme(plot.title = element_text(size = 18, face = "bold", hjust = 0.5))
