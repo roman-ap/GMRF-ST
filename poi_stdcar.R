@@ -32,35 +32,33 @@ C<-sparseMatrix(i=c( rep(1:S, Ds_ii) ),
                 dims=c(S,S))
 lambdas<-Schur(C, vectors = FALSE)$EValues
 
-pm_mu = 0
-psd_mu = 1
+pm_mu = 6
+psd_mu = 0.1
 pm_sigma = 0
 psd_sigma = 0.1
-pm_rho = 0.5
-psd_rho = 0.1
+pm_rho = 0
+psd_rho = 0.3
 ### Realisation
-with_seed(7L,{
+with_seed(87L,{
   mu_obs <- rnorm(n = 1, pm_mu, psd_mu)
   sigma_obs <- rtnorm(n = 1, pm_sigma, psd_sigma, a=0)
   rho_obs <- rtnorm(n = 1, pm_rho, psd_rho, a=1/min(lambdas), b=1/max(lambdas))
-  Q <- (D-rho_obs*A)
-  M<-1
-  Q <- forceSymmetric(Q)
-  L <- Cholesky(Q,LDL=F)
-  z <- Matrix(rnorm(S*M),S,M)
-  u_per <- solve(L,z,system="Lt")
-  u <- solve(L,u_per,system="Pt")
-  eta <- mu_obs + sigma_obs*u
+  Q = (D-rho_obs*A)
+  M = 1
+  Q = forceSymmetric(Q)
+  L = Cholesky(Q,LDL=F)
+  z = Matrix(rnorm(S*M),S,M)
+  u_per = solve(L,z,system="Lt")
+  u = solve(L,u_per,system="Pt")
+  eta = mu_obs + sigma_obs*u
 })
 
-Pop <- c(2454821,404589,301944,472298,368856,203686,246667,157973,1421781,343746,
-         1767016,283548,308116,280813,287253,285642,242148,132572,278729,248480)
-
-y <- numeric(S)
+#Pop <- c(2454821,404589,301944,472298,368856,203686,246667,157973,1421781,343746,1767016,283548,308116,280813,287253,285642,242148,132572,278729,248480)
+y_obs <- numeric(S)
 mu_y <- numeric(S)
 for(s in 1:S){
-  mu_y[s] = Pop[s]*exp(eta[s])
-  y[s] = rpois(1, mu_y[s])
+  mu_y[s] = exp(eta[s])
+  y_obs[s] = rpois(1, mu_y[s])
 }
 
 A_w<-A@x
@@ -72,8 +70,8 @@ log_det_D<-sum(log(Ds_ii))
 car <- cmdstan_model("./poi_stdcar.stan")
 
 data_list <- list(S = S,
-                  y = y,
-                  log_offset = log(Pop),
+                  y = y_obs,
+                  #log_offset = log(Pop),
                   pm_mu = pm_mu,
                   psd_mu = psd_mu,
                   pm_sigma = pm_sigma,
@@ -132,6 +130,8 @@ ggplot(data.frame(draw=car_draws$`rho`)) +
   geom_density(aes(x=draw, y=after_stat(density)), color="pink", fill="pink") +
   stat_function(fun = dnorm, args = list(mean=pm_rho, sd=psd_rho), colour="black", linewidth=1) +
   xlim(pm_rho - 6*psd_rho, pm_rho + 6*psd_rho) +
+  #stat_function(fun = dunif, args = list(min=1/min(lambdas), max=1/max(lambdas)), colour="black", linewidth=1) +
+  #xlim(1/min(lambdas), 1/max(lambdas)) +
   geom_vline(xintercept = rho_obs, color="blue") +
   theme_minimal() +
   labs(title = TeX("Prior and posterior distribution of $\\rho$"),
