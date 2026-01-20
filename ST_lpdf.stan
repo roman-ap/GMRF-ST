@@ -1,5 +1,5 @@
 /*
-* Log probability density function of the standard conditional autoregressive model: 
+* Log probability density function of the standard conditional autoregressive model:
 * WCAR specifications only.
 *
 * @param y Process to model
@@ -23,7 +23,7 @@ real std_wcar_lpdf ( vector y,
                      vector D_ii,
                      vector A_w, array[] int A_v, array[] int A_u,
                      int n ) {
-  
+
   vector[n] z = y - mu;
   real ztDz;
   real ztAz;
@@ -37,13 +37,13 @@ real std_wcar_lpdf ( vector y,
     - n * log( 2 * pi() )
     + log_det_D
     + sum ( log_det_ImrhoC )
-    - ( ztDz - rho*ztAz ) 
+    - ( ztDz - rho*ztAz )
     );
 }
 
 /*
 * Log probability density function of the standard Multivariate Autoregressive
-* with WCAR covariance/precision matrix (MARCAR) model: 
+* with WCAR covariance/precision matrix (MARCAR) model:
 *
 * @param y Spatio-Temporal process to model
 * @param mu Mean vector
@@ -81,25 +81,25 @@ real std_marcar_lpdf ( vector y,
                        vector ItAs_w, array[] int ItAs_v, array[] int ItAs_u,
                        vector AtDs_w, array[] int AtDs_v, array[] int AtDs_u,
                        vector AtAs_w, array[] int AtAs_v, array[] int AtAs_u,
-                       vector IItDs_ii, 
+                       vector IItDs_ii,
                        vector IItAs_w, array[] int IItAs_v, array[] int IItAs_u,
                        int T,
                        int S) {
-  
-  vector[T*S] z = y - mu;
-  real zItDsz;
-  real zItAsz;
-  real zAtDsz;
-  real zAtAsz;
-  real zIItDsz;
-  real zIItAsz;
+
+  vector[T*S] u = y - mu;
+  real utItDsu;
+  real utItAsu;
+  real utAtDsu;
+  real utAtAsu;
+  real utIItDsu;
+  real utIItAsu;
   vector[S] log_det_IsmrhoCs;
-  zItDsz = dot_product(z .* ItDs_ii, z);
-  zItAsz = dot_product(z, csr_matrix_times_vector(T*S, T*S, ItAs_w, ItAs_v, ItAs_u, z));
-  zAtDsz = dot_product(z, csr_matrix_times_vector(T*S, T*S, AtDs_w, AtDs_v, AtDs_u, z));
-  zAtAsz = dot_product(z, csr_matrix_times_vector(T*S, T*S, AtAs_w, AtAs_v, AtAs_u, z));
-  zIItDsz = dot_product(z .* IItDs_ii, z);
-  zIItAsz = dot_product(z, csr_matrix_times_vector(T*S, T*S, IItAs_w, IItAs_v, IItAs_u, z));
+  utItDsu = dot_product(u .* ItDs_ii, u); // t(u) %*% (I_T %x% D_S) %*% u
+  utItAsu = dot_product(u, csr_matrix_times_vector(T*S, T*S, ItAs_w, ItAs_v, ItAs_u, u)); // t(u) %*% (I_T %x% A_S) %*% u
+  utAtDsu = dot_product(u, csr_matrix_times_vector(T*S, T*S, AtDs_w, AtDs_v, AtDs_u, u)); // t(u) %*% (A_T %x% D_S) %*% u
+  utAtAsu = dot_product(u, csr_matrix_times_vector(T*S, T*S, AtAs_w, AtAs_v, AtAs_u, u)); // t(u) %*% (A_T %x% D_S) %*% u
+  utIItDsu = dot_product(u .* IItDs_ii, u); // t(u) %*% (I_T^{*} %x% D_S) %*% u
+  utIItAsu = dot_product(u, csr_matrix_times_vector(T*S, T*S, IItAs_w, IItAs_v, IItAs_u, u)); // t(u) %*% (I_T_{*} %x% A_S) %*% u
   for (s in 1:S){
     log_det_IsmrhoCs[s] = log1m( rho_space*lambdas[s] );
   }
@@ -108,11 +108,8 @@ real std_marcar_lpdf ( vector y,
     + T * log1m( square(rho_time) )
     + S * log_det_Ds
     + S * sum ( log_det_IsmrhoCs )
-    - ( zItDsz
-      - rho_space*zItAsz
-      - rho_time*zAtDsz
-      + rho_time*rho_space*zAtAsz
-      + square(rho_time)*zIItDsz
-      - square(rho_time)*rho_space*zIItAsz ) 
+    - ( utItDsu - rho_space*utItAsu
+        + square(rho_time)*utIItDsu - square(rho_time)*rho_space*utIItAsu
+        - rho_time*utAtDsu + rho_time*rho_space*utAtAsu )
     );
 }
