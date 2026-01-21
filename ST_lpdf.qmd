@@ -3,25 +3,27 @@ title: "MARCAR log probability distribution function"
 format: html
 ---
 
-We say that $\mathbf{U}=(U_{11},U_{12},\ldots,U_{1S},\ldots,U_{T1},U_{T2},\ldots,U_{TS})$ follows a standard Multivariate AutoRegressive distribution with a spatial CAR structure, denoted by $MARCAR(\rho_{T},\rho_{S})$, if and only if
+Let $T\in\mathbb{N}$ be the number of discrete time steps and $S\in\mathbb{N}$ the number of non-overlapping regions comprising the spatio-temporal support in which we observed measurements. We say that the spatio-temporal vector $\mathbf{U}=(U_{11},U_{12},\ldots,U_{1S},\ldots,U_{T1},U_{T2},\ldots,U_{TS})$ follows a standard Multivariate AR(1) distribution with a spatial CAR(1) structure, denoted by $MARCAR(\rho_{T},\rho_{S})$, if and only if
 \begin{equation}
 \mathbf{U} \sim N(\mathbf{0},\mathbf{Q}_{TS}^{-1}),
 \end{equation}
-where $\mathbf{Q}_{TS}=\mathbf{Q}_{T} \otimes \mathbf{Q}_{S}$ with 
+where $\mathbf{Q}_{TS}=\mathbf{Q}_{T} \otimes \mathbf{Q}_{S}$
 \begin{align}
 \mathbf{Q}_{T} &= \mathbf{I}_{T} + \rho_{T}^{2}\mathbf{I}_{T}^{*}  - \rho_{T}\mathbf{A}_{T}\\
-\mathbf{Q}_{S} &= \mathbf{D}_{S} - \rho_{S}\mathbf{A}_{S} 
+\mathbf{Q}_{S} &= \mathbf{D}_{S} - \rho_{S}\mathbf{A}_{S}=\mathbf{D}_{S}(\mathbf{I}_{S} - \rho_{S}\mathbf{C}_{S}) 
 \end{align}
-Here $\mathbf{I}_{T}$ denotes the identity matrix, $\mathbf{I}_{T}^{*}$ the diagonal matrix whose entries are $(0,1,\ldots,1,0)$, $\mathbf{D}_{S}$ the diagonal matrix whose entries are $(n_{1},n_{2},\ldots,n_{S})$ with $n_{s}$ the number of neighbors of region $s$, whereas $\mathbf{A}_{T}$ and $\mathbf{A}_{S}$ the adjacency matrices of the temporal AR and spatial CAR structure, respectively.    
+with $-1 < \rho_{T} < 1$ and $\frac{1}{min(\lambda_{s})} < \rho_{T} < \frac{1}{max(\lambda_{s})}$ to guarantee the positive-definiteness of $\mathbf{Q}_{T}$ and $\mathbf{Q}_{S}$, $\mathbf{C}_{S}=\mathbf{D}_{S}^{-1}\mathbf{A}_{S}$ and $\left\{\lambda_{s}\right\}_{s=1}^{S}$ the eigenvalues of the matrix $\mathbf{C}_{S}$.
+Here $\mathbf{I}_{T}$ and $\mathbf{I}_{S}$ denote the identity matrices of corresponding sizes, $\mathbf{I}_{T}^{*}$ the diagonal matrix whose entries are $(0,1,\ldots,1,0)$, $\mathbf{D}_{S}$ the diagonal matrix whose entries are $(n_{1},n_{2},\ldots,n_{S})$ with $n_{s}$ the number of neighbors of region $s$, whereas $\mathbf{A}_{T}$ and $\mathbf{A}_{S}$ the adjacency matrices of the temporal AR(1) and spatial CAR(1) structure, respectively. $\mathbf{Q}_{T}$ and $\mathbf{Q}_{S}$ are indeed the precision matrices of a temporal AR(1) and a spatial CAR(1) gaussian model.
 
-Thus,
+Thus, the logarithm of the probability density function for $\mathbf{U}$ is given by
 \begin{align}
 \log(p(\mathbf{u})) &= \frac{1}{2} \Bigl\{ &-& ST\log(2\pi) + \log(\left| \mathbf{Q}_{TS} \right|) - \mathbf{u}^{t}\mathbf{Q}_{TS}\mathbf{u} \Bigr\}\\
 &= \frac{1}{2} \Bigl\{ &-& ST\log(2\pi) + \log(\left| \mathbf{Q}_{T} \otimes \mathbf{Q}_{S} \right|) - \mathbf{u}^{t}\mathbf{Q}_{TS}\mathbf{u} \Bigr\}\\
 &= \frac{1}{2} \Bigl\{ &-& ST\log(2\pi) + \log(\left| \mathbf{Q}_{T} \right|^{T} \left| \mathbf{Q}_{S} \right|^{S}) - \mathbf{u}^{t}\mathbf{Q}_{TS}\mathbf{u} \Bigr\}\\
 &= \frac{1}{2} \Bigl\{ &-& ST\log(2\pi) + T\log(\left| \mathbf{Q}_{T} \right|) + S\log(\left| \mathbf{Q}_{S} \right|)  - \mathbf{u}^{t}\mathbf{Q}_{TS}\mathbf{u} \Bigr\}\\
+&= \frac{1}{2} \Bigl\{ &-& ST\log(2\pi) + T\log(\left| \mathbf{Q}_{T} \right|) + S\log(\left| \mathbf{D}_{S}(\mathbf{I}_{S} - \rho_{S}\mathbf{C}_{S}) \right|)  - \mathbf{u}^{t}\mathbf{Q}_{TS}\mathbf{u} \Bigr\}\\
 &= \frac{1}{2} \Bigl\{ &-& ST\log(2\pi)\\
-& &+& T\log(1 - \rho_{T}^{2}) + S\bigl[ \log(\left| \mathbf{D}_{S} \right|) + \sum_{s=1}^{S}\log(1-\rho_{s}\lambda_{s})\bigr]\\ 
+& &+& T\log(\left| \mathbf{Q}_{T} \right|) + S\bigl[ \log(\left| \mathbf{D}_{S} \right|) + \log(\left| \mathbf{I}_{S} - \rho_{S}\mathbf{C}_{S} \right|) \bigr]\\ 
 & &-& \mathbf{u}^{t}\mathbf{Q}_{TS}\mathbf{u} \Bigr\}\\
 &= \frac{1}{2} \Bigl\{ &-& ST\log(2\pi)\\
 & &+& T\log(1 - \rho_{T}^{2}) + S\bigl[ \log(\left| \mathbf{D}_{S} \right|) + \sum_{s=1}^{S}\log(1-\rho_{s}\lambda_{s})\bigr]\\ 
@@ -35,4 +37,3 @@ Thus,
 & && + \rho_{T}^{2}\mathbf{u}^{t}(\mathbf{I}_{T}^{*}\otimes\mathbf{D}_{S})\mathbf{u} - \rho_{T}^{2}\rho_{S}\mathbf{u}^{t}(\mathbf{I}_{T}^{*}\otimes\mathbf{A}_{S})\mathbf{u}\\
 & && - \rho_{T}\mathbf{u}^{t}(\mathbf{A}_{T}\otimes\mathbf{D}_{S})\mathbf{u} + \rho_{T}\rho_{S}\mathbf{u}^{t}(\mathbf{A}_{T}\otimes\mathbf{A}_{S})\mathbf{u}\Bigr] \Bigr\}
 \end{align}
-where $\left\{\lambda_{s}\right\}_{s=1}^{S}$ are the eigenvalues of the matrix $\mathbf{C}_{S}=\mathbf{D}_{S}^{-1}\mathbf{A}_{S}$.
